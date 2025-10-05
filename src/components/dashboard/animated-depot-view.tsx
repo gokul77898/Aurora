@@ -72,87 +72,89 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
   const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [isClient, setIsClient] = useState(false);
 
-  // Function to determine the initial track for a train based on its ID
-  const getInitialTrackForTrain = useMemo(() => {
-    const trackMap = new Map<string, number>();
-    return (trainId: string) => {
-      if (!trackMap.has(trainId)) {
-        const existingTracks = Array.from(trackMap.values());
-        let newTrack;
-        do {
-          newTrack = Math.floor(Math.random() * TRACKS) + 1;
-        } while (existingTracks.includes(newTrack));
-        trackMap.set(trainId, newTrack);
-      }
-      return trackMap.get(trainId)!;
-    };
-  }, []);
-
-  const initialPositions = useMemo(() => {
-    const positions: Record<string, { x: number, y: number }> = {};
-    if (isClient) {
-      trains.forEach(train => {
-        const track = getInitialTrackForTrain(train.id);
-        positions[train.id] = {
-          x: TRACK_WIDTH * 0.2,
-          y: getTrackY(track),
-        };
-      });
-    }
-    return positions;
-  }, [trains, isClient, getInitialTrackForTrain]);
-
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  // This map is stable across re-renders for a given set of trains
+  const trainToInitialTrackMap = useMemo(() => {
+    const trackMap = new Map<string, number>();
+    const usedTracks = new Set<number>();
+    
+    trains.forEach(train => {
+      let track;
+      // Try to get track from control bar logic first
+      const numId = parseInt(train.id.split('-')[1] || '0');
+      const potentialTrack = (numId - 1) % TRACKS + 1;
 
+      if (!usedTracks.has(potentialTrack)) {
+        track = potentialTrack;
+      } else {
+        // Find the next available track
+        do {
+          track = Math.floor(Math.random() * TRACKS) + 1;
+        } while (usedTracks.has(track));
+      }
+      usedTracks.add(track);
+      trackMap.set(train.id, track);
+    });
+    return trackMap;
+  }, [trains]);
+
+
+  const initialPositions = useMemo(() => {
+    const positions: Record<string, { x: number, y: number }> = {};
+    trains.forEach(train => {
+      const track = trainToInitialTrackMap.get(train.id)!;
+      positions[train.id] = {
+        x: TRACK_WIDTH * 0.2,
+        y: getTrackY(track),
+      };
+    });
+    return positions;
+  }, [trains, trainToInitialTrackMap]);
+  
   useEffect(() => {
     if (isClient) {
-      setTrainPositions(initialPositions);
-    }
-  }, [isClient, initialPositions]);
+      if (movements.length === 0) {
+        setTrainPositions(initialPositions);
+      } else {
+        let currentPositions = { ...initialPositions };
 
-  useEffect(() => {
-    if (movements.length > 0 && isClient) {
-      let currentPositions = { ...initialPositions };
-
-      const animateMovement = (moveIndex: number) => {
-        if (moveIndex >= movements.length) {
-          // Optional: Reset to initial positions after simulation
-          // setTimeout(() => setTrainPositions(initialPositions), 2000);
-          return;
-        }
-        
-        const move = movements[moveIndex];
-        const { trainId, toTrack } = move;
-
-        if(currentPositions[trainId]) {
-          const newY = getTrackY(toTrack);
+        const animateMovement = (moveIndex: number) => {
+          if (moveIndex >= movements.length) {
+            return;
+          }
           
-          currentPositions = {
-            ...currentPositions,
-            [trainId]: {
-              ...currentPositions[trainId],
-              y: newY,
-            },
-          };
-    
-          setTrainPositions(currentPositions);
-        }
+          const move = movements[moveIndex];
+          const { trainId, toTrack } = move;
 
-        setTimeout(() => animateMovement(moveIndex + 1), 1500); // 1.5-second delay between movements
-      };
+          if(currentPositions[trainId]) {
+            const newY = getTrackY(toTrack);
+            
+            currentPositions = {
+              ...currentPositions,
+              [trainId]: {
+                ...currentPositions[trainId],
+                y: newY,
+              },
+            };
       
-      // Start with initial positions, then kick off the animation sequence
-      setTrainPositions(initialPositions);
-      setTimeout(() => animateMovement(0), 500);
-    } else if (isClient) {
-      setTrainPositions(initialPositions);
+            setTrainPositions(currentPositions);
+          }
+
+          setTimeout(() => animateMovement(moveIndex + 1), 1500); 
+        };
+        
+        setTrainPositions(initialPositions);
+        setTimeout(() => animateMovement(0), 500);
+      }
     }
   }, [movements, isClient, initialPositions]);
 
+
   if (!isClient) {
-    // Render a static placeholder on the server
+    // Render a static placeholder on the server to prevent hydration mismatch
     return (
       <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
         <svg
@@ -243,3 +245,5 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
 };
 
 export default AnimatedDepotView;
+
+    

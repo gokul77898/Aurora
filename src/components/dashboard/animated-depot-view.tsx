@@ -1,79 +1,88 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { TrainFront } from 'lucide-react';
+import { TrainFront, ShieldCheck, Wrench, Sparkles, Hourglass } from 'lucide-react';
+import type { Trainset, TrainStatus } from '@/lib/types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const TRACKS = 6;
-const TRACK_HEIGHT = 16;
-const SPACING = 16;
+const TRACK_HEIGHT = 20;
+const SPACING = 18;
 const DEPOT_HEIGHT = (TRACK_HEIGHT + SPACING) * TRACKS;
+const TRACK_WIDTH = 500;
+const TRAIN_WIDTH = 60;
 
-const TrainIcon = () => (
-  <motion.div
-    className="absolute text-primary"
-    style={{ top: -4, left: -12 }}
-  >
-    <TrainFront size={24} />
-  </motion.div>
-);
-
-const trainVariants = {
-  initial: (trackIndex: number) => ({
-    x: -50,
-    y: trackIndex * (TRACK_HEIGHT + SPACING) + TRACK_HEIGHT / 2,
-  }),
-  animate: (duration: number) => ({
-    x: 550,
-    transition: {
-      duration,
-      repeat: Infinity,
-      repeatType: 'loop',
-      ease: 'linear',
-    },
-  }),
-  animateReverse: (duration: number) => ({
-    x: -50,
-    transition: {
-      duration,
-      repeat: Infinity,
-      repeatType: 'loop',
-      ease: 'linear',
-    },
-  }),
+const statusIcons: Record<TrainStatus, React.ReactNode> = {
+  service: <ShieldCheck className="h-4 w-4 text-green-400" />,
+  standby: <Hourglass className="h-4 w-4 text-yellow-400" />,
+  maintenance: <Wrench className="h-4 w-4 text-red-400" />,
+  cleaning: <Sparkles className="h-4 w-4 text-blue-400" />,
 };
 
-interface TrainAnimationProps {
-  duration: number;
-  trackIndex: number;
-  isReverse: boolean;
+const statusColors: Record<TrainStatus, string> = {
+  service: 'text-green-300',
+  standby: 'text-yellow-300',
+  maintenance: 'text-red-300',
+  cleaning: 'text-blue-300',
+};
+
+const Train = ({ train, trackIndex }: { train: Trainset; trackIndex: number }) => {
+  const yPos = trackIndex * (TRACK_HEIGHT + SPACING) + TRACK_HEIGHT / 2;
+  // Distribute trains along the track
+  const xPos = (trackIndex % 2 === 0 ? 0.2 : 0.4) * TRACK_WIDTH;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <motion.g
+            initial={{ x: -50, opacity: 0 }}
+            animate={{ x: xPos, opacity: 1 }}
+            transition={{ duration: 0.5, delay: trackIndex * 0.1 }}
+            className="cursor-pointer"
+          >
+            <motion.g
+              transform={`translate(${xPos}, ${yPos})`}
+              whileHover={{ scale: 1.1 }}
+            >
+              <TrainFront
+                className={`-translate-x-1/2 -translate-y-1/2 ${statusColors[train.status]}`}
+                size={32}
+              />
+            </motion.g>
+          </motion.g>
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="flex items-center gap-2">
+            {statusIcons[train.status]}
+            <p>
+              <strong>{train.id}</strong> ({train.status})
+            </p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+interface AnimatedDepotViewProps {
+  trains: Trainset[];
 }
 
-const TrainAnimation = ({ duration, trackIndex, isReverse }: TrainAnimationProps) => (
-  <motion.g
-    custom={trackIndex}
-    variants={trainVariants}
-    initial="initial"
-    animate={isReverse ? trainVariants.animateReverse(duration) : trainVariants.animate(duration)}
-  >
-    <TrainIcon />
-  </motion.g>
-);
-
-const AnimatedDepotView = () => {
-  const [durations, setDurations] = useState<number[]>([]);
-
-  useEffect(() => {
-    // Generate random durations only on the client-side to avoid hydration mismatch
-    setDurations(Array.from({ length: 4 }, () => Math.random() * 5 + 8));
-  }, []);
-
+const AnimatedDepotView = ({ trains }: AnimatedDepotViewProps) => {
+  // Simple logic to assign trains to tracks for visualization
+  const getTrackForTrain = (trainId: string) => {
+    const numId = parseInt(trainId.split('-')[1] || '0');
+    return (numId - 1) % TRACKS;
+  };
+  
   return (
     <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
       <svg
         width="100%"
         height={DEPOT_HEIGHT}
-        viewBox={`0 0 500 ${DEPOT_HEIGHT}`}
+        viewBox={`0 0 ${TRACK_WIDTH} ${DEPOT_HEIGHT}`}
         preserveAspectRatio="xMidYMid meet"
       >
         <defs>
@@ -94,34 +103,29 @@ const AnimatedDepotView = () => {
               key={`track-bg-${i}`}
               x="0"
               y={i * (TRACK_HEIGHT + SPACING)}
-              width="500"
+              width="100%"
               height={TRACK_HEIGHT}
               fill="hsl(var(--muted) / 0.5)"
               rx="2"
             />
+            <text x="5" y={i * (TRACK_HEIGHT + SPACING) + TRACK_HEIGHT / 2 + 4} fontSize="10" fill="hsl(var(--muted-foreground))">
+              Track {i + 1}
+            </text>
             <rect
               key={`track-ties-${i}`}
               x="0"
               y={i * (TRACK_HEIGHT + SPACING) + (TRACK_HEIGHT - 4) / 2}
-              width="500"
+              width="100%"
               height="4"
               fill="url(#track-pattern)"
             />
           </g>
         ))}
 
-        {/* Train Animations */}
-        {durations.length > 0 && Array.from({ length: 4 }).map((_, i) => {
-          const trackIndex = Math.floor(i * 1.5) % TRACKS;
-          const isReverse = i % 2 === 0;
-          return (
-            <TrainAnimation
-              key={`train-${i}`}
-              duration={durations[i]}
-              trackIndex={trackIndex}
-              isReverse={isReverse}
-            />
-          );
+        {/* Real Trains */}
+        {trains.map((train) => {
+          const trackIndex = getTrackForTrain(train.id);
+          return <Train key={train.id} train={train} trackIndex={trackIndex} />;
         })}
       </svg>
     </div>

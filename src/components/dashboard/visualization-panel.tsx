@@ -15,7 +15,7 @@ export default function VisualizationPanel({ trains }: VisualizationPanelProps) 
     <div className="space-y-6">
       <SlaCoverageChart trains={trains} />
       <MileageChart trains={trains} />
-      <ShuntingViewer />
+      <ShuntingViewer trains={trains} />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { initialTrainData } from '@/lib/data';
 import type { Trainset } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard/header';
 import TrainTable from '@/components/dashboard/train-table';
@@ -9,41 +8,87 @@ import VisualizationPanel from '@/components/dashboard/visualization-panel';
 import ControlBar from '@/components/dashboard/control-bar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PredictionsView from '@/components/dashboard/predictions-view';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { collection, doc, updateDoc, Firestore } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { Button } from '@/components/ui/button';
+import { seedInitialData } from '@/lib/seed';
 
 export default function DashboardPage() {
-  const [trains, setTrains] = useState<Trainset[]>(initialTrainData);
+  const firestore = useFirestore();
+  const { data: trains, loading, error } = useCollection<Trainset>(
+    firestore ? collection(firestore, 'trainsets') : null
+  );
 
-  const handleTrainUpdate = (updatedTrain: Trainset) => {
-    setTrains((currentTrains) =>
-      currentTrains.map((t) => (t.id === updatedTrain.id ? updatedTrain : t))
-    );
+  const handleTrainUpdate = async (updatedTrain: Trainset) => {
+    if (!firestore) return;
+    const trainRef = doc(firestore, 'trainsets', updatedTrain.id);
+    // We only want to update the status, not the whole object
+    await updateDoc(trainRef, { status: updatedTrain.status });
   };
   
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-muted/40">
+        Loading train data...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-muted/40">
+        Error loading data: {error.message}
+      </div>
+    );
+  }
+
+  const handleSeed = async () => {
+    if (firestore) {
+      await seedInitialData(firestore);
+      // Data will refresh automatically due to the real-time listener,
+      // so no need to reload the page.
+    }
+  }
+
   return (
     <div className="flex h-screen w-full flex-col bg-muted/40">
       <DashboardHeader />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        <Tabs defaultValue="overview">
-          <div className="mx-auto max-w-screen-2xl">
-            <TabsList className="grid w-full grid-cols-2 md:w-96">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="predictions">Predictions</TabsTrigger>
-            </TabsList>
+        {trains && trains.length === 0 && (
+          <div className="mx-auto flex max-w-screen-2xl flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
+            <h2 className="text-xl font-semibold">No Train Data Found</h2>
+            <p className="mt-2 text-muted-foreground">
+              Your Firestore database is empty. You can seed it with the initial sample data.
+            </p>
+            <Button onClick={handleSeed} className="mt-4">
+              Seed Initial Data
+            </Button>
           </div>
-          <TabsContent value="overview">
-            <div className="mx-auto mt-4 grid max-w-screen-2xl auto-rows-max grid-cols-1 gap-6 lg:grid-cols-3 xl:grid-cols-4">
-              <div className="lg:col-span-2 xl:col-span-3">
-                <TrainTable trains={trains} onUpdateTrain={handleTrainUpdate} />
-              </div>
-              <div className="lg:col-span-1 xl:col-span-1">
-                <VisualizationPanel trains={trains} />
-              </div>
+        )}
+        {trains && trains.length > 0 && (
+          <Tabs defaultValue="overview">
+            <div className="mx-auto max-w-screen-2xl">
+              <TabsList className="grid w-full grid-cols-2 md:w-96">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="predictions">Predictions</TabsTrigger>
+              </TabsList>
             </div>
-          </TabsContent>
-          <TabsContent value="predictions">
-             <PredictionsView trains={trains} />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="overview">
+              <div className="mx-auto mt-4 grid max-w-screen-2xl auto-rows-max grid-cols-1 gap-6 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="lg:col-span-2 xl:col-span-3">
+                  <TrainTable trains={trains} onUpdateTrain={handleTrainUpdate} />
+                </div>
+                <div className="lg:col-span-1 xl:col-span-1">
+                  <VisualizationPanel trains={trains} />
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="predictions">
+              <PredictionsView trains={trains} />
+            </TabsContent>
+          </Tabs>
+        )}
       </main>
       <ControlBar />
     </div>

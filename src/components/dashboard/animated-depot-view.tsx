@@ -74,7 +74,7 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
     return (numId - 1) % TRACKS + 1;
   };
   
-  const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }> | null>(null);
 
   useEffect(() => {
     // This logic now runs only on the client, after the initial render, preventing hydration mismatch.
@@ -90,7 +90,7 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
   }, [trains]);
 
   useEffect(() => {
-    if (movements.length > 0) {
+    if (movements.length > 0 && trainPositions) {
       let currentPositions = {...trainPositions};
       
       const animateMovement = (moveIndex: number) => {
@@ -117,7 +117,8 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
 
       animateMovement(0);
     }
-  }, [movements, trainPositions]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movements]);
 
 
   return (
@@ -170,7 +171,7 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
         <text x={TRACK_WIDTH - 60} y={getTrackY(6) + 5} fontSize="12" fill="hsl(var(--accent-foreground))" className="font-bold">Cleaning</text>
 
         <AnimatePresence>
-          {trains.map((train) => {
+          {trainPositions && trains.map((train) => {
             const position = trainPositions[train.id];
             if (!position) return null;
             return <Train key={train.id} train={train} position={position} />;

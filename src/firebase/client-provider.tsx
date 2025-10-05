@@ -21,6 +21,7 @@ export function FirebaseClientProvider({
   const [instances, setInstances] = useState<FirebaseInstances | null>(null);
 
   useEffect(() => {
+    // Check if Firebase is already initialized
     if (typeof window !== 'undefined') {
       const { app, auth, firestore } = initializeFirebase();
       setInstances({ app, auth, firestore });
@@ -28,7 +29,6 @@ export function FirebaseClientProvider({
   }, []);
 
   if (!instances) {
-    // You can return a loading spinner or null here
     return (
        <div className="flex h-screen w-full flex-col items-center justify-center bg-muted/40">
         Initializing Firebase...

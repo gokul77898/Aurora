@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo } from 'react';
 import type { Trainset } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard/header';
 import TrainTable from '@/components/dashboard/train-table';
@@ -16,7 +16,12 @@ import { seedInitialData } from '@/lib/seed';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
-  const trainsetsCollection = firestore ? collection(firestore, 'trainsets') : null;
+
+  const trainsetsCollection = useMemo(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'trainsets');
+  }, [firestore]);
+
   const { data: trains, loading, error } = useCollection<Trainset>(trainsetsCollection);
 
   const handleTrainUpdate = async (updatedTrain: Trainset) => {
@@ -45,8 +50,6 @@ export default function DashboardPage() {
   const handleSeed = async () => {
     if (firestore) {
       await seedInitialData(firestore);
-      // Data will refresh automatically due to the real-time listener,
-      // so no need to reload the page.
     }
   }
 

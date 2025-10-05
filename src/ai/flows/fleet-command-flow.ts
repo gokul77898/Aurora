@@ -67,11 +67,10 @@ export const fleetCommandFlow = ai.defineFlow(
     outputSchema: FleetCommandOutputSchema,
   },
   async (input) => {
-    const response = await prompt(input);
-    const toolResponse = response.toolRequest?.name === 'get_trainset_data' ? response.text : null;
+    const llmResponse = await prompt(input);
     
     return {
-      response: response.text,
+      response: llmResponse.text,
     };
   }
 );

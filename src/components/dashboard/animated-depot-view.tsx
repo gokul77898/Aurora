@@ -73,6 +73,9 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
     const numId = parseInt(trainId.split('-')[1] || '0');
     return (numId - 1) % TRACKS + 1;
   };
+  
+  const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [isClient, setIsClient] = useState(false);
 
   const initialPositions = useMemo(() => {
     const positions: Record<string, { x: number, y: number }> = {};
@@ -85,25 +88,20 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
     });
     return positions;
   }, [trains]);
-  
-  const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }>>(initialPositions);
-  const [isClient, setIsClient] = useState(false);
+
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
-
-  useEffect(() => {
     setTrainPositions(initialPositions);
   }, [initialPositions]);
 
   useEffect(() => {
-    if (movements.length > 0) {
+    if (movements.length > 0 && isClient) {
       let currentPositions = { ...initialPositions };
       
       const animateMovement = (moveIndex: number) => {
         if (moveIndex >= movements.length) {
-          // Reset to initial state after animation is complete if desired
+          // Optional: Reset to initial state after animation is complete
           // setTimeout(() => setTrainPositions(initialPositions), 2000);
           return;
         }
@@ -111,23 +109,29 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
         const move = movements[moveIndex];
         const { trainId, toTrack } = move;
         
-        // Use a functional update to avoid stale state issues
-        setTrainPositions(prevPositions => ({
-          ...prevPositions,
+        currentPositions = {
+          ...currentPositions,
           [trainId]: {
-            ...prevPositions[trainId],
+            ...currentPositions[trainId],
             y: getTrackY(toTrack),
           },
-        }));
+        };
+
+        setTrainPositions(currentPositions);
 
         // Animate next move after a delay
         setTimeout(() => animateMovement(moveIndex + 1), 1000);
       };
-
-      animateMovement(0);
+      
+      // Start with initial positions before animating
+      setTrainPositions(initialPositions);
+      // Start the animation sequence after a short delay to ensure initial state is rendered
+      setTimeout(() => animateMovement(0), 100);
+    } else {
+        setTrainPositions(initialPositions);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movements, initialPositions]);
+  }, [movements, isClient]);
 
   if (!isClient) {
     return null; // Render nothing on the server to prevent hydration mismatch
@@ -183,7 +187,7 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
         <text x={TRACK_WIDTH - 60} y={getTrackY(6) + 5} fontSize="12" fill="hsl(var(--accent-foreground))" className="font-bold">Cleaning</text>
 
         <AnimatePresence>
-          {trainPositions && trains.map((train) => {
+          {trains.map((train) => {
             const position = trainPositions[train.id];
             if (!position) return null;
             return <Train key={train.id} train={train} position={position} />;

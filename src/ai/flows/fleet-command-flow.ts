@@ -9,9 +9,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { initialTrainData } from '@/lib/data';
-import type { Trainset } from '@/lib/types';
 
 // Define a tool for the AI to get trainset data
 const getTrainsetDataTool = ai.defineTool(

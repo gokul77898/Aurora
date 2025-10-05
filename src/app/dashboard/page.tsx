@@ -13,13 +13,11 @@ import { collection, doc, updateDoc, type Firestore } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { seedInitialData } from '@/lib/seed';
-import type { Movement } from '@/components/dashboard/animated-depot-view';
 
 export const maxDuration = 60; // Give the AI up to 60 seconds to respond
 
 export default function DashboardPage() {
   const firestore = useFirestore();
-  const [movements, setMovements] = useState<Movement[]>([]);
 
   const trainsetsCollection = useMemo(() => {
     if (!firestore) return null;
@@ -33,10 +31,6 @@ export default function DashboardPage() {
     const { id, ...data } = updatedTrain;
     const trainRef = doc(firestore, 'trainsets', id);
     await updateDoc(trainRef, data);
-  };
-
-  const handleAnimate = (moves: Movement[]) => {
-    setMovements(moves);
   };
 
   if (loading) {
@@ -90,7 +84,7 @@ export default function DashboardPage() {
                   <TrainTable trains={trains} onUpdateTrain={handleTrainUpdate} />
                 </div>
                 <div className="lg:col-span-1 xl:col-span-1">
-                  <VisualizationPanel trains={trains} movements={movements} />
+                  <VisualizationPanel trains={trains} />
                 </div>
               </div>
             </TabsContent>
@@ -100,7 +94,7 @@ export default function DashboardPage() {
           </Tabs>
         )}
       </main>
-      {trains && trains.length > 0 && <ControlBar onAnimate={handleAnimate} trains={trains} />}
+      {trains && trains.length > 0 && <ControlBar />}
     </div>
   );
 }

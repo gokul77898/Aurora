@@ -88,7 +88,11 @@ export default function PredictionsView({ trains }: { trains: Trainset[] }) {
       setPredictions(validPredictions);
       setLoading(false);
     }
-    fetchPredictions();
+    if (trains?.length) {
+      fetchPredictions();
+    } else {
+      setLoading(false);
+    }
   }, [trains]);
 
   const highRiskPredictions = predictions.filter(p => p.isMaintenanceLikely);

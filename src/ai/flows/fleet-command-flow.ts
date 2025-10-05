@@ -59,7 +59,7 @@ const prompt = ai.definePrompt({
 });
 
 
-export const fleetCommandFlow = ai.defineFlow(
+const _fleetCommandFlow = ai.defineFlow(
   {
     name: 'fleetCommandFlow',
     inputSchema: FleetCommandInputSchema,
@@ -73,3 +73,8 @@ export const fleetCommandFlow = ai.defineFlow(
     };
   }
 );
+
+
+export async function fleetCommandFlow(input: FleetCommandInput): Promise<FleetCommandOutput> {
+    return _fleetCommandFlow(input);
+}

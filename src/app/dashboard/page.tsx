@@ -24,11 +24,11 @@ export default function DashboardPage() {
 
   const { data: trains, loading, error } = useCollection<Trainset>(trainsetsCollection);
 
-  const handleTrainUpdate = async (updatedTrain: Trainset) => {
+  const handleTrainUpdate = async (updatedTrain: Partial<Trainset> & { id: string }) => {
     if (!firestore) return;
-    const trainRef = doc(firestore, 'trainsets', updatedTrain.id);
-    // We only want to update the status, not the whole object
-    await updateDoc(trainRef, { status: updatedTrain.status });
+    const { id, ...data } = updatedTrain;
+    const trainRef = doc(firestore, 'trainsets', id);
+    await updateDoc(trainRef, data);
   };
   
   if (loading) {

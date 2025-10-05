@@ -7,6 +7,7 @@ export interface Trainset {
   jobCardStatus: "Open" | "Closed" | "In Progress";
   mileage: number;
   slaPriority: "High" | "Medium" | "Low";
+  maintenanceNotes?: string;
 }
 
 export type TrainsetDocument = Omit<Trainset, 'id'>;

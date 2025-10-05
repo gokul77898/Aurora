@@ -9,6 +9,11 @@ import {
   type OptimizeShuntingPathsInput,
   type OptimizeShuntingPathsOutput,
 } from '@/ai/flows/optimize-shunting-paths';
+import {
+  predictMaintenance,
+  type PredictMaintenanceInput,
+  type PredictMaintenanceOutput,
+} from '@/ai/flows/predict-maintenance';
 
 export async function getExplanation(
   input: ExplainTrainAssignmentInput
@@ -33,5 +38,17 @@ export async function getOptimizedPaths(
     return {
       error: 'An error occurred during path optimization. Please try again.',
     };
+  }
+}
+
+export async function getMaintenancePrediction(
+  input: PredictMaintenanceInput
+): Promise<PredictMaintenanceOutput | null> {
+  try {
+    const result = await predictMaintenance(input);
+    return result;
+  } catch (error) {
+    console.error('Error in getMaintenancePrediction:', error);
+    return null;
   }
 }

@@ -77,6 +77,7 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
   const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }>>({});
 
   useEffect(() => {
+    // This logic now runs only on the client, after the initial render, preventing hydration mismatch.
     const initialPositions: Record<string, { x: number, y: number }> = {};
     trains.forEach(train => {
       const track = getInitialTrackForTrain(train.id);
@@ -116,7 +117,7 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
 
       animateMovement(0);
     }
-  }, [movements]);
+  }, [movements, trainPositions]);
 
 
   return (

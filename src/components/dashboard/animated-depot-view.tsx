@@ -79,13 +79,15 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
 
   const initialPositions = useMemo(() => {
     const positions: Record<string, { x: number, y: number }> = {};
-    trains.forEach(train => {
-      const track = getInitialTrackForTrain(train.id);
-      positions[train.id] = {
-        x: TRACK_WIDTH * 0.2,
-        y: getTrackY(track),
-      };
-    });
+    if (typeof window !== 'undefined') {
+        trains.forEach(train => {
+        const track = getInitialTrackForTrain(train.id);
+        positions[train.id] = {
+            x: TRACK_WIDTH * 0.2,
+            y: getTrackY(track),
+        };
+        });
+    }
     return positions;
   }, [trains]);
 
@@ -109,15 +111,19 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
         const move = movements[moveIndex];
         const { trainId, toTrack } = move;
         
-        currentPositions = {
-          ...currentPositions,
-          [trainId]: {
-            ...currentPositions[trainId],
-            y: getTrackY(toTrack),
-          },
-        };
+        // Ensure the train exists before trying to move it
+        if(currentPositions[trainId]) {
+            currentPositions = {
+                ...currentPositions,
+                [trainId]: {
+                ...currentPositions[trainId],
+                y: getTrackY(toTrack),
+                },
+            };
+    
+            setTrainPositions(currentPositions);
+        }
 
-        setTrainPositions(currentPositions);
 
         // Animate next move after a delay
         setTimeout(() => animateMovement(moveIndex + 1), 1000);
@@ -131,10 +137,38 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
         setTrainPositions(initialPositions);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movements, isClient]);
+  }, [movements, isClient, initialPositions]);
 
   if (!isClient) {
-    return null; // Render nothing on the server to prevent hydration mismatch
+    // Render a static placeholder on the server
+    return (
+        <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
+             <svg
+                width="100%"
+                height={DEPOT_HEIGHT}
+                viewBox={`0 0 ${TRACK_WIDTH} ${DEPOT_HEIGHT}`}
+                preserveAspectRatio="xMidYMid meet"
+            >
+                {/* Render static tracks only */}
+                 {Array.from({ length: TRACKS }).map((_, i) => (
+                    <g key={`track-group-${i}`}>
+                        <rect
+                        key={`track-bg-${i}`}
+                        x="0"
+                        y={i * (TRACK_HEIGHT + SPACING)}
+                        width="100%"
+                        height={TRACK_HEIGHT}
+                        fill="hsl(var(--muted) / 0.5)"
+                        rx="4"
+                        />
+                        <text x="10" y={i * (TRACK_HEIGHT + SPACING) + TRACK_HEIGHT / 2 + 5} fontSize="12" fill="hsl(var(--muted-foreground))">
+                        Track {i + 1}
+                        </text>
+                    </g>
+                ))}
+            </svg>
+        </div>
+    );
   }
 
   return (

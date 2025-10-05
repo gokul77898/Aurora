@@ -75,25 +75,25 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  // This map is stable across re-renders for a given set of trains
+
   const trainToInitialTrackMap = useMemo(() => {
     const trackMap = new Map<string, number>();
     const usedTracks = new Set<number>();
     
     trains.forEach(train => {
       let track;
-      // Try to get track from control bar logic first
       const numId = parseInt(train.id.split('-')[1] || '0');
       const potentialTrack = (numId - 1) % TRACKS + 1;
 
       if (!usedTracks.has(potentialTrack)) {
         track = potentialTrack;
       } else {
-        // Find the next available track
-        do {
-          track = Math.floor(Math.random() * TRACKS) + 1;
-        } while (usedTracks.has(track));
+        // Find the next available track if the preferred one is taken
+        let nextTrack = 1;
+        while(usedTracks.has(nextTrack) && nextTrack <= TRACKS) {
+          nextTrack++;
+        }
+        track = nextTrack <= TRACKS ? nextTrack : (numId - 1) % TRACKS + 1; // fallback
       }
       usedTracks.add(track);
       trackMap.set(train.id, track);
@@ -115,46 +115,44 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
   }, [trains, trainToInitialTrackMap]);
   
   useEffect(() => {
-    if (isClient) {
-      if (movements.length === 0) {
-        setTrainPositions(initialPositions);
-      } else {
-        let currentPositions = { ...initialPositions };
+    // This effect should only run on the client
+    if (!isClient) return;
 
-        const animateMovement = (moveIndex: number) => {
-          if (moveIndex >= movements.length) {
-            return;
-          }
-          
-          const move = movements[moveIndex];
-          const { trainId, toTrack } = move;
-
-          if(currentPositions[trainId]) {
-            const newY = getTrackY(toTrack);
-            
-            currentPositions = {
-              ...currentPositions,
-              [trainId]: {
-                ...currentPositions[trainId],
-                y: newY,
-              },
-            };
-      
-            setTrainPositions(currentPositions);
-          }
-
-          setTimeout(() => animateMovement(moveIndex + 1), 1500); 
-        };
-        
-        setTrainPositions(initialPositions);
-        setTimeout(() => animateMovement(0), 500);
-      }
+    if (movements.length === 0) {
+      setTrainPositions(initialPositions);
+      return;
     }
+
+    // Reset to initial positions before starting animation sequence
+    setTrainPositions(initialPositions);
+    
+    let delay = 500; // Initial delay before the first animation starts
+    const animationTimeout = 1500; // Delay between each movement
+
+    movements.forEach((move, index) => {
+      setTimeout(() => {
+        setTrainPositions(prevPositions => {
+          const { trainId, toTrack } = move;
+          if (!prevPositions[trainId]) return prevPositions;
+
+          const newY = getTrackY(toTrack);
+          return {
+            ...prevPositions,
+            [trainId]: {
+              ...prevPositions[trainId],
+              y: newY,
+            },
+          };
+        });
+      }, delay + index * animationTimeout);
+    });
+  // The dependencies are correct. This effect should re-run ONLY when `movements` changes.
+  // `initialPositions` is memoized and stable, `isClient` only changes once.
   }, [movements, isClient, initialPositions]);
 
 
   if (!isClient) {
-    // Render a static placeholder on the server to prevent hydration mismatch
+    // Render a static placeholder on the server to prevent hydration mismatch and loops
     return (
       <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
         <svg
@@ -245,5 +243,3 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
 };
 
 export default AnimatedDepotView;
-
-    

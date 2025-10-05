@@ -1,5 +1,3 @@
-'use server';
-
 /**
  * @fileOverview A flow for querying trainset data using natural language.
  *

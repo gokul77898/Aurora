@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { seedInitialData } from '@/lib/seed';
 import type { Movement } from '@/components/dashboard/animated-depot-view';
 
+export const maxDuration = 60; // Give the AI up to 60 seconds to respond
+
 export default function DashboardPage() {
   const firestore = useFirestore();
   const [movements, setMovements] = useState<Movement[]>([]);

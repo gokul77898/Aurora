@@ -43,6 +43,23 @@ const trainVariants = {
   }),
 };
 
+interface TrainAnimationProps {
+  duration: number;
+  trackIndex: number;
+  isReverse: boolean;
+}
+
+const TrainAnimation = ({ duration, trackIndex, isReverse }: TrainAnimationProps) => (
+  <motion.g
+    custom={trackIndex}
+    variants={trainVariants}
+    initial="initial"
+    animate={isReverse ? trainVariants.animateReverse(duration) : trainVariants.animate(duration)}
+  >
+    <TrainIcon />
+  </motion.g>
+);
+
 const AnimatedDepotView = () => {
   const [durations, setDurations] = useState<number[]>([]);
 
@@ -50,11 +67,6 @@ const AnimatedDepotView = () => {
     // Generate random durations only on the client-side to avoid hydration mismatch
     setDurations(Array.from({ length: 4 }, () => Math.random() * 5 + 8));
   }, []);
-
-  if (durations.length === 0) {
-    // Render a static placeholder or nothing until durations are generated on client
-    return <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4" />;
-  }
 
   return (
     <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
@@ -99,21 +111,16 @@ const AnimatedDepotView = () => {
         ))}
 
         {/* Train Animations */}
-        {Array.from({ length: 4 }).map((_, i) => {
+        {durations.length > 0 && Array.from({ length: 4 }).map((_, i) => {
           const trackIndex = Math.floor(i * 1.5) % TRACKS;
           const isReverse = i % 2 === 0;
           return (
-            <motion.g
+            <TrainAnimation
               key={`train-${i}`}
-              custom={trackIndex}
-              variants={trainVariants}
-              initial="initial"
-              animate={isReverse ? "animateReverse" : "animate"}
-              // Pass duration as a custom prop to the variant
-              custom-duration={durations[i]}
-            >
-              <TrainIcon />
-            </motion.g>
+              duration={durations[i]}
+              trackIndex={trackIndex}
+              isReverse={isReverse}
+            />
           );
         })}
       </svg>

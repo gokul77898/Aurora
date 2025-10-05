@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { BrainCircuit, FileDown, Loader2, Bot } from 'lucide-react';
+import { BrainCircuit, FileDown, Loader2, Bot, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getOptimizedPaths, getSuggestedMoves } from '@/lib/actions';
 import {
@@ -19,23 +19,18 @@ import type { Trainset } from '@/lib/types';
 import { useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import AnimatedDepotView from './animated-depot-view';
 
-// Simplified type for the new dialog result
+type Movement = { trainId: string; fromTrack: number; toTrack: number; reason: string };
+
 type ShuntingMovesResult = {
-  movements?: { trainId: string; fromTrack: number; toTrack: number; reason: string }[];
+  movements?: Movement[];
   summary?: string;
   error?: string;
 };
 
 
-function SuggestMovesDialog() {
-  const firestore = useFirestore();
-  const trainsetsCollection = React.useMemo(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'trainsets');
-  }, [firestore]);
-  const { data: trains } = useCollection<Trainset>(trainsetsCollection);
-
+function SuggestMovesDialog({trains, onAnimate}: {trains: Trainset[], onAnimate: (moves: Movement[]) => void}) {
   const [isOpen, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState<ShuntingMovesResult | null>(null);
@@ -52,9 +47,14 @@ function SuggestMovesDialog() {
     setLoading(true);
     setResult(null);
 
-    const trainStates = trains.map((t, index) => ({
+    const getTrackForTrain = (trainId: string) => {
+      const numId = parseInt(trainId.split('-')[1] || '0');
+      return (numId - 1) % 6 + 1;
+    };
+
+    const trainStates = trains.map((t) => ({
       id: t.id,
-      track: (index % 6) + 1, // Assign a mock track for now
+      track: getTrackForTrain(t.id),
       status: t.status,
       destination: t.status === 'maintenance' ? 'Maintenance Bay' : t.status === 'cleaning' ? 'Cleaning Bay' : 'Staging/Exit',
     }));
@@ -66,6 +66,12 @@ function SuggestMovesDialog() {
     setResult(res);
     setLoading(false);
   };
+  
+  const handlePlaySimulation = () => {
+    if (result && result.movements) {
+      onAnimate(result.movements);
+    }
+  }
 
   const { toast } = useToast();
 
@@ -125,6 +131,12 @@ function SuggestMovesDialog() {
           ) : null}
         </div>
         <DialogFooter>
+           {result && result.movements && (
+            <Button variant="outline" onClick={handlePlaySimulation}>
+              <Play className="mr-2 h-4 w-4" />
+              Play Simulation
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
           <Button onClick={handleSuggestMoves} disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -206,7 +218,7 @@ function OptimizePathsDialog() {
 }
 
 
-export default function ControlBar() {
+export default function ControlBar({ onAnimate, trains }: { onAnimate: (moves: Movement[]) => void, trains: Trainset[] }) {
   const { toast } = useToast();
 
   const handleExport = () => {
@@ -220,7 +232,7 @@ export default function ControlBar() {
   return (
     <footer className="sticky bottom-0 z-30 mt-auto border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-end gap-4 px-4 md:px-6">
-        <SuggestMovesDialog />
+        <SuggestMovesDialog trains={trains} onAnimate={onAnimate} />
         <OptimizePathsDialog />
         <Button variant="outline" onClick={handleExport}>
           <FileDown className="mr-2 h-4 w-4" />

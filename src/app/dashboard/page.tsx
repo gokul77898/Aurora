@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Trainset } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard/header';
 import TrainTable from '@/components/dashboard/train-table';
@@ -13,9 +13,11 @@ import { collection, doc, updateDoc, type Firestore } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { seedInitialData } from '@/lib/seed';
+import type { Movement } from '@/components/dashboard/animated-depot-view';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
+  const [movements, setMovements] = useState<Movement[]>([]);
 
   const trainsetsCollection = useMemo(() => {
     if (!firestore) return null;
@@ -30,6 +32,10 @@ export default function DashboardPage() {
     const trainRef = doc(firestore, 'trainsets', id);
     await updateDoc(trainRef, data);
   };
+
+  const handleAnimate = (moves: Movement[]) => {
+    setMovements(moves);
+  }
   
   if (loading) {
     return (
@@ -82,7 +88,7 @@ export default function DashboardPage() {
                   <TrainTable trains={trains} onUpdateTrain={handleTrainUpdate} />
                 </div>
                 <div className="lg:col-span-1 xl:col-span-1">
-                  <VisualizationPanel trains={trains} />
+                  <VisualizationPanel trains={trains} movements={movements} />
                 </div>
               </div>
             </TabsContent>
@@ -92,7 +98,7 @@ export default function DashboardPage() {
           </Tabs>
         )}
       </main>
-      <ControlBar />
+      {trains && <ControlBar onAnimate={handleAnimate} trains={trains} />}
     </div>
   );
 }

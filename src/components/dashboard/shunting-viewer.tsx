@@ -1,14 +1,15 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import AnimatedDepotView from './animated-depot-view';
+import AnimatedDepotView, { type Movement } from './animated-depot-view';
 import type { Trainset } from '@/lib/types';
 
 interface ShuntingViewerProps {
     trains: Trainset[];
+    movements: Movement[];
 }
 
-export default function ShuntingViewer({ trains }: ShuntingViewerProps) {
+export default function ShuntingViewer({ trains, movements }: ShuntingViewerProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -17,7 +18,7 @@ export default function ShuntingViewer({ trains }: ShuntingViewerProps) {
       </CardHeader>
       <CardContent>
         <div className="aspect-video overflow-hidden rounded-lg border">
-          <AnimatedDepotView trains={trains} />
+          <AnimatedDepotView trains={trains} movements={movements} />
         </div>
       </CardContent>
     </Card>

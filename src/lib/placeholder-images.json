@@ -1,3 +1,10 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "shunting-yard",
+      "description": "An aerial view of a large, complex train shunting yard with many tracks.",
+      "imageUrl": "https://images.unsplash.com/photo-1641275500391-e8a3b8a11c87?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx0cmFpbiUyMHlhcmR8ZW58MHx8fHwxNzU5NjUxMTY2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "train yard"
+    }
+  ]
 }

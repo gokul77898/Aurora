@@ -23,15 +23,24 @@ const trainVariants = {
     x: -50,
     y: trackIndex * (TRACK_HEIGHT + SPACING) + TRACK_HEIGHT / 2,
   }),
-  animate: (isReverse: boolean) => ({
-    x: isReverse ? -50 : 550,
+  animate: {
+    x: 550,
     transition: {
       duration: Math.random() * 5 + 8, // 8-13 seconds
       repeat: Infinity,
       repeatType: 'loop',
       ease: 'linear',
     },
-  }),
+  },
+   animateReverse: {
+    x: -50,
+    transition: {
+      duration: Math.random() * 5 + 8,
+      repeat: Infinity,
+      repeatType: 'loop',
+      ease: 'linear',
+    },
+  },
 };
 
 const AnimatedDepotView = () => {
@@ -97,37 +106,5 @@ const AnimatedDepotView = () => {
     </div>
   );
 };
-
-
-const AnimatedTrain = ({ trackIndex, reverse = false }: { trackIndex: number; reverse?: boolean }) => {
-  const duration = Math.random() * 5 + 8; // 8-13s
-  const startX = reverse ? '110%' : '-10%';
-  const endX = reverse ? '-10%' : '110%';
-
-  return (
-    <motion.div
-      className="absolute"
-      style={{
-        top: `${trackIndex * (100 / TRACKS)}%`,
-        paddingTop: `${(SPACING/2) / DEPOT_HEIGHT * 100}%`,
-        paddingBottom: `${(SPACING/2) / DEPOT_HEIGHT * 100}%`,
-        height: `${TRACK_HEIGHT / DEPOT_HEIGHT * 100}%`,
-      }}
-      initial={{ x: startX }}
-      animate={{ x: endX }}
-      transition={{
-        duration,
-        ease: 'linear',
-        repeat: Infinity,
-        repeatType: 'loop',
-      }}
-    >
-      <div className="relative h-full w-12 text-primary">
-         <TrainFront className="h-full w-auto" />
-      </div>
-    </motion.div>
-  );
-};
-
 
 export default AnimatedDepotView;

@@ -104,9 +104,7 @@ export default function PredictionsView({ trains }: { trains: Trainset[] }) {
 
       {loading ? (
          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          <PredictionSkeleton />
-          <PredictionSkeleton />
-          <PredictionSkeleton />
+          {[...Array(3)].map((_, i) => <PredictionSkeleton key={i} />)}
         </div>
       ) : highRiskPredictions.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">

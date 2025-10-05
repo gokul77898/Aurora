@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrainFront } from 'lucide-react';
 
@@ -23,27 +23,39 @@ const trainVariants = {
     x: -50,
     y: trackIndex * (TRACK_HEIGHT + SPACING) + TRACK_HEIGHT / 2,
   }),
-  animate: {
+  animate: (duration: number) => ({
     x: 550,
     transition: {
-      duration: Math.random() * 5 + 8, // 8-13 seconds
+      duration,
       repeat: Infinity,
       repeatType: 'loop',
       ease: 'linear',
     },
-  },
-   animateReverse: {
+  }),
+  animateReverse: (duration: number) => ({
     x: -50,
     transition: {
-      duration: Math.random() * 5 + 8,
+      duration,
       repeat: Infinity,
       repeatType: 'loop',
       ease: 'linear',
     },
-  },
+  }),
 };
 
 const AnimatedDepotView = () => {
+  const [durations, setDurations] = useState<number[]>([]);
+
+  useEffect(() => {
+    // Generate random durations only on the client-side to avoid hydration mismatch
+    setDurations(Array.from({ length: 4 }, () => Math.random() * 5 + 8));
+  }, []);
+
+  if (durations.length === 0) {
+    // Render a static placeholder or nothing until durations are generated on client
+    return <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4" />;
+  }
+
   return (
     <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
       <svg
@@ -97,6 +109,8 @@ const AnimatedDepotView = () => {
               variants={trainVariants}
               initial="initial"
               animate={isReverse ? "animateReverse" : "animate"}
+              // Pass duration as a custom prop to the variant
+              custom-duration={durations[i]}
             >
               <TrainIcon />
             </motion.g>

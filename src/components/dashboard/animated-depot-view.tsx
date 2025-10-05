@@ -66,9 +66,10 @@ export type Movement = { trainId: string; fromTrack: number; toTrack: number; re
 interface AnimatedDepotViewProps {
   trains: Trainset[];
   movements: Movement[];
+  trainToInitialTrackMap: Map<string, number>;
 }
 
-const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
+const AnimatedDepotView = ({ trains, movements, trainToInitialTrackMap }: AnimatedDepotViewProps) => {
   const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [isClient, setIsClient] = useState(false);
 
@@ -76,36 +77,10 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
     setIsClient(true);
   }, []);
 
-  const trainToInitialTrackMap = useMemo(() => {
-    const trackMap = new Map<string, number>();
-    const usedTracks = new Set<number>();
-    
-    trains.forEach(train => {
-      let track;
-      const numId = parseInt(train.id.split('-')[1] || '0');
-      const potentialTrack = (numId - 1) % TRACKS + 1;
-
-      if (!usedTracks.has(potentialTrack)) {
-        track = potentialTrack;
-      } else {
-        // Find the next available track if the preferred one is taken
-        let nextTrack = 1;
-        while(usedTracks.has(nextTrack) && nextTrack <= TRACKS) {
-          nextTrack++;
-        }
-        track = nextTrack <= TRACKS ? nextTrack : (numId - 1) % TRACKS + 1; // fallback
-      }
-      usedTracks.add(track);
-      trackMap.set(train.id, track);
-    });
-    return trackMap;
-  }, [trains]);
-
-
   const initialPositions = useMemo(() => {
     const positions: Record<string, { x: number, y: number }> = {};
     trains.forEach(train => {
-      const track = trainToInitialTrackMap.get(train.id)!;
+      const track = trainToInitialTrackMap.get(train.id) || 1;
       positions[train.id] = {
         x: TRACK_WIDTH * 0.2,
         y: getTrackY(track),

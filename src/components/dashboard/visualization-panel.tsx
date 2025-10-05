@@ -12,14 +12,15 @@ import { Bot, Move } from 'lucide-react';
 interface VisualizationPanelProps {
   trains: Trainset[];
   movements: Movement[];
+  trainToInitialTrackMap: Map<string, number>;
 }
 
-export default function VisualizationPanel({ trains, movements }: VisualizationPanelProps) {
+export default function VisualizationPanel({ trains, movements, trainToInitialTrackMap }: VisualizationPanelProps) {
   return (
     <div className="space-y-6">
       <SlaCoverageChart trains={trains} />
       <MileageChart trains={trains} />
-      <ShuntingViewer trains={trains} movements={movements} />
+      <ShuntingViewer trains={trains} movements={movements} trainToInitialTrackMap={trainToInitialTrackMap} />
       
       {movements.length > 0 && (
         <Card className="shadow-lg">

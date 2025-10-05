@@ -11,9 +11,10 @@ import type { Movement } from '@/ai/flows/suggest-shunting-movements';
 interface ControlBarProps {
   trains: Trainset[];
   onNewMovements: (movements: Movement[]) => void;
+  trainToInitialTrackMap: Map<string, number>;
 }
 
-export default function ControlBar({ trains, onNewMovements }: ControlBarProps) {
+export default function ControlBar({ trains, onNewMovements, trainToInitialTrackMap }: ControlBarProps) {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
 
@@ -24,15 +25,9 @@ export default function ControlBar({ trains, onNewMovements }: ControlBarProps) 
       description: "The AI depot controller is analyzing the depot state...",
     });
     try {
-      // Get the current track for each train
-      const getTrackForTrain = (trainId: string) => {
-        const numId = parseInt(trainId.split('-')[1] || '0');
-        return (numId - 1) % 6 + 1;
-      };
-
       const trainStates = trains.map(train => ({
         id: train.id,
-        track: getTrackForTrain(train.id), // You might need a more persistent way to get this
+        track: trainToInitialTrackMap.get(train.id) || 1, // Use the passed map
         status: train.status,
         destination: train.status === 'maintenance' ? 'Maintenance Bay' : train.status === 'cleaning' ? 'Cleaning Bay' : 'Staging/Exit',
       }));

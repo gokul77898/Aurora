@@ -17,6 +17,8 @@ import type { Movement } from '@/ai/flows/suggest-shunting-movements';
 
 export const maxDuration = 60; // Give the AI up to 60 seconds to respond
 
+const TRACKS = 6;
+
 export default function DashboardPage() {
   const firestore = useFirestore();
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -27,6 +29,34 @@ export default function DashboardPage() {
   }, [firestore]);
 
   const { data: trains, loading, error } = useCollection<Trainset>(trainsetsCollection);
+  
+  const trainToInitialTrackMap = useMemo(() => {
+    const trackMap = new Map<string, number>();
+    if (!trains) return trackMap;
+
+    const usedTracks = new Set<number>();
+    
+    trains.forEach(train => {
+      let track;
+      const numId = parseInt(train.id.split('-')[1] || '0');
+      const potentialTrack = (numId - 1) % TRACKS + 1;
+
+      if (!usedTracks.has(potentialTrack)) {
+        track = potentialTrack;
+      } else {
+        // Find the next available track if the preferred one is taken
+        let nextTrack = 1;
+        while(usedTracks.has(nextTrack) && nextTrack <= TRACKS) {
+          nextTrack++;
+        }
+        track = nextTrack <= TRACKS ? nextTrack : (numId - 1) % TRACKS + 1; // fallback
+      }
+      usedTracks.add(track);
+      trackMap.set(train.id, track);
+    });
+    return trackMap;
+  }, [trains]);
+
 
   const handleTrainUpdate = async (updatedTrain: Partial<Trainset> & { id: string }) => {
     if (!firestore) return;
@@ -86,7 +116,7 @@ export default function DashboardPage() {
                   <TrainTable trains={trains} onUpdateTrain={handleTrainUpdate} />
                 </div>
                 <div className="lg:col-span-1 xl:col-span-1">
-                  <VisualizationPanel trains={trains} movements={movements} />
+                  <VisualizationPanel trains={trains} movements={movements} trainToInitialTrackMap={trainToInitialTrackMap} />
                 </div>
               </div>
             </TabsContent>
@@ -96,7 +126,7 @@ export default function DashboardPage() {
           </Tabs>
         )}
       </main>
-      {trains && trains.length > 0 && <ControlBar trains={trains} onNewMovements={setMovements} />}
+      {trains && trains.length > 0 && <ControlBar trains={trains} onNewMovements={setMovements} trainToInitialTrackMap={trainToInitialTrackMap}/>}
     </div>
   );
 }

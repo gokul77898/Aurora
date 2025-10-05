@@ -35,8 +35,8 @@ export default function DashboardPage() {
 
   const handleAnimate = (moves: Movement[]) => {
     setMovements(moves);
-  }
-  
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-muted/40">
@@ -57,7 +57,7 @@ export default function DashboardPage() {
     if (firestore) {
       await seedInitialData(firestore);
     }
-  }
+  };
 
   return (
     <div className="flex h-screen w-full flex-col bg-muted/40">
@@ -98,7 +98,7 @@ export default function DashboardPage() {
           </Tabs>
         )}
       </main>
-      {trains && <ControlBar onAnimate={handleAnimate} trains={trains} />}
+      {trains && trains.length > 0 && <ControlBar onAnimate={handleAnimate} trains={trains} />}
     </div>
   );
 }

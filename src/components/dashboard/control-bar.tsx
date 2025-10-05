@@ -16,12 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import type { Trainset } from '@/lib/types';
-import { useCollection } from '@/firebase';
-import { useFirestore } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import AnimatedDepotView from './animated-depot-view';
-
-type Movement = { trainId: string; fromTrack: number; toTrack: number; reason: string };
+import type { Movement } from './animated-depot-view';
 
 type ShuntingMovesResult = {
   movements?: Movement[];
@@ -29,11 +24,11 @@ type ShuntingMovesResult = {
   error?: string;
 };
 
-
 function SuggestMovesDialog({trains, onAnimate}: {trains: Trainset[], onAnimate: (moves: Movement[]) => void}) {
   const [isOpen, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState<ShuntingMovesResult | null>(null);
+  const { toast } = useToast();
 
   const handleSuggestMoves = async () => {
     if (!trains) {
@@ -70,10 +65,13 @@ function SuggestMovesDialog({trains, onAnimate}: {trains: Trainset[], onAnimate:
   const handlePlaySimulation = () => {
     if (result && result.movements) {
       onAnimate(result.movements);
+      toast({
+        title: 'Simulation Started',
+        description: 'Watch the depot viewer to see the AI plan in action.',
+      });
+      setOpen(false);
     }
   }
-
-  const { toast } = useToast();
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>

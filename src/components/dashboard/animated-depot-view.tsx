@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrainFront, ShieldCheck, Wrench, Sparkles, Hourglass } from 'lucide-react';
 import type { Trainset, TrainStatus } from '@/lib/types';
@@ -73,43 +73,52 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
     const numId = parseInt(trainId.split('-')[1] || '0');
     return (numId - 1) % TRACKS + 1;
   };
-  
-  const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }> | null>(null);
 
-  useEffect(() => {
-    // This logic now runs only on the client, after the initial render, preventing hydration mismatch.
-    const initialPositions: Record<string, { x: number, y: number }> = {};
+  const initialPositions = useMemo(() => {
+    const positions: Record<string, { x: number, y: number }> = {};
     trains.forEach(train => {
       const track = getInitialTrackForTrain(train.id);
-      initialPositions[train.id] = {
+      positions[train.id] = {
         x: TRACK_WIDTH * 0.2,
         y: getTrackY(track),
       };
     });
-    setTrainPositions(initialPositions);
+    return positions;
   }, [trains]);
+  
+  const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }>>(initialPositions);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (movements.length > 0 && trainPositions) {
-      let currentPositions = {...trainPositions};
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    setTrainPositions(initialPositions);
+  }, [initialPositions]);
+
+  useEffect(() => {
+    if (movements.length > 0) {
+      let currentPositions = { ...initialPositions };
       
       const animateMovement = (moveIndex: number) => {
         if (moveIndex >= movements.length) {
-          return; // All movements are done
+          // Reset to initial state after animation is complete if desired
+          // setTimeout(() => setTrainPositions(initialPositions), 2000);
+          return;
         }
         
         const move = movements[moveIndex];
         const { trainId, toTrack } = move;
         
-        currentPositions = {
-          ...currentPositions,
+        // Use a functional update to avoid stale state issues
+        setTrainPositions(prevPositions => ({
+          ...prevPositions,
           [trainId]: {
-            ...currentPositions[trainId],
+            ...prevPositions[trainId],
             y: getTrackY(toTrack),
           },
-        };
-
-        setTrainPositions(currentPositions);
+        }));
 
         // Animate next move after a delay
         setTimeout(() => animateMovement(moveIndex + 1), 1000);
@@ -118,8 +127,11 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
       animateMovement(0);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [movements]);
+  }, [movements, initialPositions]);
 
+  if (!isClient) {
+    return null; // Render nothing on the server to prevent hydration mismatch
+  }
 
   return (
     <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">

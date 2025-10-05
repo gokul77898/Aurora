@@ -7,11 +7,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  DialogTitle,
 } from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
 import { Search, Bot } from 'lucide-react';
 import { getFleetCommandResponse } from '@/lib/actions';
 import { Skeleton } from '../ui/skeleton';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 export default function CommandBar() {
   const [open, setOpen] = React.useState(false);
@@ -62,6 +64,9 @@ export default function CommandBar() {
         </kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
+        <VisuallyHidden>
+            <DialogTitle>Fleet Command</DialogTitle>
+        </VisuallyHidden>
         <form onSubmit={handleQuery}>
             <CommandInput
             placeholder="Ask about your fleet... e.g. 'Which trains are in maintenance?'"

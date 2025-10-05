@@ -30,6 +30,7 @@ const MovementSchema = z.object({
     toTrack: z.number().describe('The track number the train is moving to.'),
     reason: z.string().describe('The reason for this movement (e.g., "Move to maintenance bay for repairs").'),
 });
+export type Movement = z.infer<typeof MovementSchema>;
 
 const SuggestShuntingMovementsOutputSchema = z.object({
   movements: z.array(MovementSchema).describe('A prioritized, step-by-step list of train movements to perform.'),

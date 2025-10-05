@@ -14,6 +14,12 @@ import {
   type FleetCommandInput,
   type FleetCommandOutput,
 } from '@/ai/flows/fleet-command-flow';
+import {
+  suggestShuntingMovements,
+  type SuggestShuntingMovementsInput,
+  type SuggestShuntingMovementsOutput,
+} from '@/ai/flows/suggest-shunting-movements';
+
 
 export async function getExplanation(
   input: ExplainTrainAssignmentInput
@@ -45,4 +51,11 @@ export async function getFleetCommandResponse(
 ): Promise<FleetCommandOutput> {
     const result = await fleetCommandFlow(input);
     return result;
+}
+
+export async function getShuntingMovements(
+  input: SuggestShuntingMovementsInput
+): Promise<SuggestShuntingMovementsOutput> {
+  const result = await suggestShuntingMovements(input);
+  return result;
 }

@@ -69,99 +69,116 @@ interface AnimatedDepotViewProps {
 }
 
 const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
-  const getInitialTrackForTrain = (trainId: string) => {
-    const numId = parseInt(trainId.split('-')[1] || '0');
-    return (numId - 1) % TRACKS + 1;
-  };
-  
   const [trainPositions, setTrainPositions] = useState<Record<string, { x: number; y: number }>>({});
   const [isClient, setIsClient] = useState(false);
+
+  // Function to determine the initial track for a train based on its ID
+  const getInitialTrackForTrain = useMemo(() => {
+    const trackMap = new Map<string, number>();
+    return (trainId: string) => {
+      if (!trackMap.has(trainId)) {
+        const existingTracks = Array.from(trackMap.values());
+        let newTrack;
+        do {
+          newTrack = Math.floor(Math.random() * TRACKS) + 1;
+        } while (existingTracks.includes(newTrack));
+        trackMap.set(trainId, newTrack);
+      }
+      return trackMap.get(trainId)!;
+    };
+  }, []);
 
   const initialPositions = useMemo(() => {
     const positions: Record<string, { x: number, y: number }> = {};
     if (isClient) {
-        trains.forEach(train => {
+      trains.forEach(train => {
         const track = getInitialTrackForTrain(train.id);
         positions[train.id] = {
-            x: TRACK_WIDTH * 0.2,
-            y: getTrackY(track),
+          x: TRACK_WIDTH * 0.2,
+          y: getTrackY(track),
         };
-        });
+      });
     }
     return positions;
-  }, [trains, isClient]);
-
+  }, [trains, isClient, getInitialTrackForTrain]);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  useEffect(() => {
-      setTrainPositions(initialPositions);
-  }, [initialPositions]);
 
+  useEffect(() => {
+    if (isClient) {
+      setTrainPositions(initialPositions);
+    }
+  }, [isClient, initialPositions]);
 
   useEffect(() => {
     if (movements.length > 0 && isClient) {
       let currentPositions = { ...initialPositions };
-      
+
       const animateMovement = (moveIndex: number) => {
         if (moveIndex >= movements.length) {
+          // Optional: Reset to initial positions after simulation
+          // setTimeout(() => setTrainPositions(initialPositions), 2000);
           return;
         }
         
         const move = movements[moveIndex];
         const { trainId, toTrack } = move;
-        
+
         if(currentPositions[trainId]) {
-            currentPositions = {
-                ...currentPositions,
-                [trainId]: {
-                ...currentPositions[trainId],
-                y: getTrackY(toTrack),
-                },
-            };
+          const newY = getTrackY(toTrack);
+          
+          currentPositions = {
+            ...currentPositions,
+            [trainId]: {
+              ...currentPositions[trainId],
+              y: newY,
+            },
+          };
     
-            setTrainPositions(currentPositions);
+          setTrainPositions(currentPositions);
         }
 
-        setTimeout(() => animateMovement(moveIndex + 1), 1000);
+        setTimeout(() => animateMovement(moveIndex + 1), 1500); // 1.5-second delay between movements
       };
       
+      // Start with initial positions, then kick off the animation sequence
       setTrainPositions(initialPositions);
-      setTimeout(() => animateMovement(0), 100);
-    } else if(isClient) {
-        setTrainPositions(initialPositions);
+      setTimeout(() => animateMovement(0), 500);
+    } else if (isClient) {
+      setTrainPositions(initialPositions);
     }
   }, [movements, isClient, initialPositions]);
 
   if (!isClient) {
+    // Render a static placeholder on the server
     return (
-        <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
-             <svg
+      <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
+        <svg
+          width="100%"
+          height={DEPOT_HEIGHT}
+          viewBox={`0 0 ${TRACK_WIDTH} ${DEPOT_HEIGHT}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {Array.from({ length: TRACKS }).map((_, i) => (
+            <g key={`track-group-${i}`}>
+              <rect
+                key={`track-bg-${i}`}
+                x="0"
+                y={i * (TRACK_HEIGHT + SPACING)}
                 width="100%"
-                height={DEPOT_HEIGHT}
-                viewBox={`0 0 ${TRACK_WIDTH} ${DEPOT_HEIGHT}`}
-                preserveAspectRatio="xMidYMid meet"
-            >
-                 {Array.from({ length: TRACKS }).map((_, i) => (
-                    <g key={`track-group-${i}`}>
-                        <rect
-                        key={`track-bg-${i}`}
-                        x="0"
-                        y={i * (TRACK_HEIGHT + SPACING)}
-                        width="100%"
-                        height={TRACK_HEIGHT}
-                        fill="hsl(var(--muted) / 0.5)"
-                        rx="4"
-                        />
-                        <text x="10" y={i * (TRACK_HEIGHT + SPACING) + TRACK_HEIGHT / 2 + 5} fontSize="12" fill="hsl(var(--muted-foreground))">
-                        Track {i + 1}
-                        </text>
-                    </g>
-                ))}
-            </svg>
-        </div>
+                height={TRACK_HEIGHT}
+                fill="hsl(var(--muted) / 0.5)"
+                rx="4"
+              />
+              <text x="10" y={i * (TRACK_HEIGHT + SPACING) + TRACK_HEIGHT / 2 + 5} fontSize="12" fill="hsl(var(--muted-foreground))">
+                Track {i + 1}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
     );
   }
 
@@ -209,12 +226,13 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
           </g>
         ))}
         
-        <text x={TRACK_WIDTH - 60} y={getTrackY(1) + 5} fontSize="12" fill="hsl(var(--accent-foreground))" className="font-bold">Maintenance</text>
-        <text x={TRACK_WIDTH - 60} y={getTrackY(6) + 5} fontSize="12" fill="hsl(var(--accent-foreground))" className="font-bold">Cleaning</text>
+        <text x={TRACK_WIDTH - 80} y={getTrackY(1) - 5} fontSize="12" fill="hsl(var(--muted-foreground))" className="font-semibold">Maintenance</text>
+        <text x={TRACK_WIDTH - 80} y={getTrackY(TRACKS) + 5} fontSize="12" fill="hsl(var(--muted-foreground))" className="font-semibold">Cleaning</text>
 
         <AnimatePresence>
           {trains.map((train) => {
             const position = trainPositions[train.id];
+            // Only render the train if its position is calculated
             if (!position) return null;
             return <Train key={train.id} train={train} position={position} />;
           })}

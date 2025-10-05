@@ -9,6 +9,11 @@ import {
   type PredictMaintenanceInput,
   type PredictMaintenanceOutput,
 } from '@/ai/flows/predict-maintenance';
+import {
+  fleetCommandFlow,
+  type FleetCommandInput,
+  type FleetCommandOutput,
+} from '@/ai/flows/fleet-command-flow';
 
 export async function getExplanation(
   input: ExplainTrainAssignmentInput
@@ -32,4 +37,12 @@ export async function getMaintenancePrediction(
     console.error('Error in getMaintenancePrediction:', error);
     return null;
   }
+}
+
+
+export async function getFleetCommandResponse(
+  input: FleetCommandInput
+): Promise<FleetCommandOutput> {
+    const result = await fleetCommandFlow(input);
+    return result;
 }

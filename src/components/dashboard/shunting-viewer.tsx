@@ -1,8 +1,8 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import AnimatedDepotView, { type Movement } from './animated-depot-view';
 import type { Trainset } from '@/lib/types';
+import AnimatedDepotView, { type Movement } from './animated-depot-view';
 
 interface ShuntingViewerProps {
     trains: Trainset[];

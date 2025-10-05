@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import CommandBar from './command-bar';
 
 export default function DashboardHeader() {
   return (
@@ -20,7 +21,9 @@ export default function DashboardHeader() {
           Aurora Metro Induction Planner
         </h1>
       </div>
-      <div className="ml-auto flex items-center gap-4">
+
+      <div className="ml-auto flex items-center gap-2 md:gap-4">
+         <CommandBar />
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Toggle notifications</span>

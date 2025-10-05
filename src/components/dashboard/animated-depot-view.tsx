@@ -79,7 +79,7 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
 
   const initialPositions = useMemo(() => {
     const positions: Record<string, { x: number, y: number }> = {};
-    if (typeof window !== 'undefined') {
+    if (isClient) {
         trains.forEach(train => {
         const track = getInitialTrackForTrain(train.id);
         positions[train.id] = {
@@ -89,13 +89,17 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
         });
     }
     return positions;
-  }, [trains]);
+  }, [trains, isClient]);
 
 
   useEffect(() => {
     setIsClient(true);
-    setTrainPositions(initialPositions);
+  }, []);
+  
+  useEffect(() => {
+      setTrainPositions(initialPositions);
   }, [initialPositions]);
+
 
   useEffect(() => {
     if (movements.length > 0 && isClient) {
@@ -103,15 +107,12 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
       
       const animateMovement = (moveIndex: number) => {
         if (moveIndex >= movements.length) {
-          // Optional: Reset to initial state after animation is complete
-          // setTimeout(() => setTrainPositions(initialPositions), 2000);
           return;
         }
         
         const move = movements[moveIndex];
         const { trainId, toTrack } = move;
         
-        // Ensure the train exists before trying to move it
         if(currentPositions[trainId]) {
             currentPositions = {
                 ...currentPositions,
@@ -124,23 +125,17 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
             setTrainPositions(currentPositions);
         }
 
-
-        // Animate next move after a delay
         setTimeout(() => animateMovement(moveIndex + 1), 1000);
       };
       
-      // Start with initial positions before animating
       setTrainPositions(initialPositions);
-      // Start the animation sequence after a short delay to ensure initial state is rendered
       setTimeout(() => animateMovement(0), 100);
-    } else {
+    } else if(isClient) {
         setTrainPositions(initialPositions);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [movements, isClient, initialPositions]);
 
   if (!isClient) {
-    // Render a static placeholder on the server
     return (
         <div className="relative flex h-full w-full items-center justify-center bg-muted/20 p-4">
              <svg
@@ -149,7 +144,6 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
                 viewBox={`0 0 ${TRACK_WIDTH} ${DEPOT_HEIGHT}`}
                 preserveAspectRatio="xMidYMid meet"
             >
-                {/* Render static tracks only */}
                  {Array.from({ length: TRACKS }).map((_, i) => (
                     <g key={`track-group-${i}`}>
                         <rect
@@ -190,7 +184,6 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
           </pattern>
         </defs>
 
-        {/* Tracks */}
         {Array.from({ length: TRACKS }).map((_, i) => (
           <g key={`track-group-${i}`}>
             <rect
@@ -216,7 +209,6 @@ const AnimatedDepotView = ({ trains, movements }: AnimatedDepotViewProps) => {
           </g>
         ))}
         
-        {/* Special Bays */}
         <text x={TRACK_WIDTH - 60} y={getTrackY(1) + 5} fontSize="12" fill="hsl(var(--accent-foreground))" className="font-bold">Maintenance</text>
         <text x={TRACK_WIDTH - 60} y={getTrackY(6) + 5} fontSize="12" fill="hsl(var(--accent-foreground))" className="font-bold">Cleaning</text>
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TrainFront, ShieldCheck, Wrench, Sparkles, Hourglass } from 'lucide-react';
 import type { Trainset, TrainStatus } from '@/lib/types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import type { Movement } from '@/ai/flows/suggest-shunting-movements';
 
 const TRACKS = 6;
 const TRACK_HEIGHT = 30;
@@ -61,8 +62,6 @@ const Train = ({ train, position }: { train: Trainset; position: { x: number; y:
   );
 };
 
-export type Movement = { trainId: string; fromTrack: number; toTrack: number; reason: string };
-
 interface AnimatedDepotViewProps {
   trains: Trainset[];
   movements: Movement[];
@@ -79,15 +78,17 @@ const AnimatedDepotView = ({ trains, movements, trainToInitialTrackMap }: Animat
 
   const initialPositions = useMemo(() => {
     const positions: Record<string, { x: number, y: number }> = {};
-    trains.forEach(train => {
-      const track = trainToInitialTrackMap.get(train.id) || 1;
-      positions[train.id] = {
-        x: TRACK_WIDTH * 0.2,
-        y: getTrackY(track),
-      };
-    });
+    if (isClient) {
+      trains.forEach(train => {
+        const track = trainToInitialTrackMap.get(train.id) || 1;
+        positions[train.id] = {
+          x: TRACK_WIDTH * 0.2,
+          y: getTrackY(track),
+        };
+      });
+    }
     return positions;
-  }, [trains, trainToInitialTrackMap]);
+  }, [trains, trainToInitialTrackMap, isClient]);
   
   useEffect(() => {
     // This effect should only run on the client
@@ -97,12 +98,13 @@ const AnimatedDepotView = ({ trains, movements, trainToInitialTrackMap }: Animat
       setTrainPositions(initialPositions);
       return;
     }
-
-    // Reset to initial positions before starting animation sequence
-    setTrainPositions(initialPositions);
     
-    let delay = 500; // Initial delay before the first animation starts
-    const animationTimeout = 1500; // Delay between each movement
+    // Animate movements
+    let currentPositions = { ...initialPositions };
+    setTrainPositions(currentPositions);
+
+    let delay = 500; // Initial delay
+    const animationTimeout = 1500; // Delay between movements
 
     movements.forEach((move, index) => {
       setTimeout(() => {
@@ -121,8 +123,8 @@ const AnimatedDepotView = ({ trains, movements, trainToInitialTrackMap }: Animat
         });
       }, delay + index * animationTimeout);
     });
-  // The dependencies are correct. This effect should re-run ONLY when `movements` changes.
-  // `initialPositions` is memoized and stable, `isClient` only changes once.
+  
+  // Rerun this effect ONLY when movements change. isClient and initialPositions are stable.
   }, [movements, isClient, initialPositions]);
 
 

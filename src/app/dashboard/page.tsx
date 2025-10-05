@@ -8,17 +8,16 @@ import VisualizationPanel from '@/components/dashboard/visualization-panel';
 import ControlBar from '@/components/dashboard/control-bar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PredictionsView from '@/components/dashboard/predictions-view';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, doc, updateDoc, Firestore } from 'firebase/firestore';
+import { useCollection } from '@/firebase';
+import { collection, doc, updateDoc, type Firestore } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { seedInitialData } from '@/lib/seed';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
-  const { data: trains, loading, error } = useCollection<Trainset>(
-    firestore ? collection(firestore, 'trainsets') : null
-  );
+  const trainsetsCollection = firestore ? collection(firestore, 'trainsets') : null;
+  const { data: trains, loading, error } = useCollection<Trainset>(trainsetsCollection);
 
   const handleTrainUpdate = async (updatedTrain: Trainset) => {
     if (!firestore) return;
@@ -55,7 +54,7 @@ export default function DashboardPage() {
     <div className="flex h-screen w-full flex-col bg-muted/40">
       <DashboardHeader />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        {trains && trains.length === 0 && (
+        {trains && trains.length === 0 && !loading && (
           <div className="mx-auto flex max-w-screen-2xl flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-12 text-center">
             <h2 className="text-xl font-semibold">No Train Data Found</h2>
             <p className="mt-2 text-muted-foreground">

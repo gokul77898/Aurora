@@ -20,15 +20,14 @@ let auth: Auth;
 let firestore: Firestore;
 
 function initializeFirebase() {
-  if (getApps().length === 0) {
+  const apps = getApps();
+  if (apps.length === 0) {
     app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    firestore = getFirestore(app);
   } else {
-    app = getApps()[0];
-    auth = getAuth(app);
-    firestore = getFirestore(app);
+    app = apps[0];
   }
+  auth = getAuth(app);
+  firestore = getFirestore(app);
   return { app, auth, firestore };
 }
 
